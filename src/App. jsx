@@ -1,0 +1,422 @@
+import { useState, useEffect, useCallback } from "react";
+
+const JOGADORES = ["elton", "erika"];
+const NOMES = { elton: "⚡ Elton", erika: "💚 Erika" };
+const CORES = { elton: "#002776", erika: "#009C3B" };
+
+// Todos os 72 jogos da fase de grupos + mata-mata (horário de Brasília)
+const JOGOS = [
+  // ===== RODADA 1 =====
+  { id:"g01", grupo:"A", rodada:1, nome:"México 🇲🇽 × África do Sul 🇿🇦",         data:"11/06 · 16h" },
+  { id:"g02", grupo:"A", rodada:1, nome:"Coreia do Sul 🇰🇷 × Rep. Tcheca 🇨🇿",     data:"11/06 · 23h" },
+  { id:"g03", grupo:"B", rodada:1, nome:"Canadá 🇨🇦 × Bósnia-Herz. 🇧🇦",          data:"12/06 · 16h" },
+  { id:"g04", grupo:"D", rodada:1, nome:"EUA 🇺🇸 × Paraguai 🇵🇾",                  data:"12/06 · 22h" },
+  { id:"g05", grupo:"B", rodada:1, nome:"Qatar 🇶🇦 × Suíça 🇨🇭",                   data:"13/06 · 16h" },
+  { id:"g06", grupo:"C", rodada:1, nome:"Brasil 🇧🇷 × Marrocos 🇲🇦",               data:"13/06 · 19h" },
+  { id:"g07", grupo:"C", rodada:1, nome:"Haiti 🇭🇹 × Escócia 🏴󠁧󠁢󠁳󠁣󠁴󠁿",                 data:"13/06 · 22h" },
+  { id:"g08", grupo:"D", rodada:1, nome:"Austrália 🇦🇺 × Turquia 🇹🇷",             data:"14/06 · 01h" },
+  { id:"g09", grupo:"E", rodada:1, nome:"Alemanha 🇩🇪 × Curaçao 🇨🇼",              data:"14/06 · 14h" },
+  { id:"g10", grupo:"F", rodada:1, nome:"Países Baixos 🇳🇱 × Japão 🇯🇵",           data:"14/06 · 17h" },
+  { id:"g11", grupo:"E", rodada:1, nome:"Costa do Marfim 🇨🇮 × Equador 🇪🇨",       data:"14/06 · 20h" },
+  { id:"g12", grupo:"F", rodada:1, nome:"Suécia 🇸🇪 × Tunísia 🇹🇳",               data:"14/06 · 23h" },
+  { id:"g13", grupo:"H", rodada:1, nome:"Espanha 🇪🇸 × Cabo Verde 🇨🇻",            data:"15/06 · 13h" },
+  { id:"g14", grupo:"G", rodada:1, nome:"Bélgica 🇧🇪 × Egito 🇪🇬",                data:"15/06 · 16h" },
+  { id:"g15", grupo:"H", rodada:1, nome:"Arábia Saudita 🇸🇦 × Uruguai 🇺🇾",        data:"15/06 · 19h" },
+  { id:"g16", grupo:"G", rodada:1, nome:"Irã 🇮🇷 × Nova Zelândia 🇳🇿",             data:"15/06 · 22h" },
+  { id:"g17", grupo:"I", rodada:1, nome:"França 🇫🇷 × Senegal 🇸🇳",               data:"16/06 · 16h" },
+  { id:"g18", grupo:"I", rodada:1, nome:"Iraque 🇮🇶 × Noruega 🇳🇴",               data:"16/06 · 19h" },
+  { id:"g19", grupo:"J", rodada:1, nome:"Argentina 🇦🇷 × Argélia 🇩🇿",            data:"16/06 · 22h" },
+  { id:"g20", grupo:"J", rodada:1, nome:"Áustria 🇦🇹 × Jordânia 🇯🇴",             data:"17/06 · 01h" },
+  { id:"g21", grupo:"K", rodada:1, nome:"Portugal 🇵🇹 × Congo (RD) 🇨🇩",          data:"17/06 · 14h" },
+  { id:"g22", grupo:"L", rodada:1, nome:"Inglaterra 🏴󠁧󠁢󠁥󠁮󠁧󠁿 × Croácia 🇭🇷",            data:"17/06 · 17h" },
+  { id:"g23", grupo:"L", rodada:1, nome:"Gana 🇬🇭 × Panamá 🇵🇦",                  data:"17/06 · 20h" },
+  { id:"g24", grupo:"K", rodada:1, nome:"Uzbequistão 🇺🇿 × Colômbia 🇨🇴",         data:"17/06 · 23h" },
+
+  // ===== RODADA 2 =====
+  { id:"g25", grupo:"A", rodada:2, nome:"Rep. Tcheca 🇨🇿 × África do Sul 🇿🇦",     data:"18/06 · 13h" },
+  { id:"g26", grupo:"B", rodada:2, nome:"Suíça 🇨🇭 × Bósnia-Herz. 🇧🇦",           data:"18/06 · 16h" },
+  { id:"g27", grupo:"B", rodada:2, nome:"Canadá 🇨🇦 × Qatar 🇶🇦",                  data:"18/06 · 19h" },
+  { id:"g28", grupo:"A", rodada:2, nome:"México 🇲🇽 × Coreia do Sul 🇰🇷",          data:"18/06 · 22h" },
+  { id:"g29", grupo:"D", rodada:2, nome:"EUA 🇺🇸 × Austrália 🇦🇺",                 data:"19/06 · 16h" },
+  { id:"g30", grupo:"C", rodada:2, nome:"Escócia 🏴󠁧󠁢󠁳󠁣󠁴󠁿 × Marrocos 🇲🇦",               data:"19/06 · 19h" },
+  { id:"g31", grupo:"C", rodada:2, nome:"Brasil 🇧🇷 × Haiti 🇭🇹",                  data:"19/06 · 21h30" },
+  { id:"g32", grupo:"D", rodada:2, nome:"Turquia 🇹🇷 × Paraguai 🇵🇾",              data:"20/06 · 00h" },
+  { id:"g33", grupo:"F", rodada:2, nome:"Países Baixos 🇳🇱 × Suécia 🇸🇪",          data:"20/06 · 14h" },
+  { id:"g34", grupo:"E", rodada:2, nome:"Alemanha 🇩🇪 × Costa do Marfim 🇨🇮",      data:"20/06 · 17h" },
+  { id:"g35", grupo:"E", rodada:2, nome:"Equador 🇪🇨 × Curaçao 🇨🇼",              data:"20/06 · 21h" },
+  { id:"g36", grupo:"F", rodada:2, nome:"Tunísia 🇹🇳 × Japão 🇯🇵",               data:"21/06 · 01h" },
+  { id:"g37", grupo:"H", rodada:2, nome:"Espanha 🇪🇸 × Arábia Saudita 🇸🇦",        data:"21/06 · 13h" },
+  { id:"g38", grupo:"G", rodada:2, nome:"Bélgica 🇧🇪 × Irã 🇮🇷",                  data:"21/06 · 16h" },
+  { id:"g39", grupo:"H", rodada:2, nome:"Uruguai 🇺🇾 × Cabo Verde 🇨🇻",            data:"21/06 · 19h" },
+  { id:"g40", grupo:"G", rodada:2, nome:"Nova Zelândia 🇳🇿 × Egito 🇪🇬",           data:"21/06 · 22h" },
+  { id:"g41", grupo:"J", rodada:2, nome:"Argentina 🇦🇷 × Áustria 🇦🇹",            data:"22/06 · 14h" },
+  { id:"g42", grupo:"I", rodada:2, nome:"França 🇫🇷 × Iraque 🇮🇶",               data:"22/06 · 18h" },
+  { id:"g43", grupo:"I", rodada:2, nome:"Noruega 🇳🇴 × Senegal 🇸🇳",              data:"22/06 · 21h" },
+  { id:"g44", grupo:"J", rodada:2, nome:"Jordânia 🇯🇴 × Argélia 🇩🇿",             data:"23/06 · 00h" },
+  { id:"g45", grupo:"K", rodada:2, nome:"Portugal 🇵🇹 × Uzbequistão 🇺🇿",         data:"23/06 · 14h" },
+  { id:"g46", grupo:"L", rodada:2, nome:"Inglaterra 🏴󠁧󠁢󠁥󠁮󠁧󠁿 × Gana 🇬🇭",               data:"23/06 · 17h" },
+  { id:"g47", grupo:"L", rodada:2, nome:"Panamá 🇵🇦 × Croácia 🇭🇷",               data:"23/06 · 20h" },
+  { id:"g48", grupo:"K", rodada:2, nome:"Colômbia 🇨🇴 × Congo (RD) 🇨🇩",          data:"23/06 · 23h" },
+
+  // ===== RODADA 3 =====
+  { id:"g49", grupo:"B", rodada:3, nome:"Suíça 🇨🇭 × Canadá 🇨🇦",                 data:"24/06 · 16h" },
+  { id:"g50", grupo:"B", rodada:3, nome:"Bósnia-Herz. 🇧🇦 × Qatar 🇶🇦",           data:"24/06 · 16h" },
+  { id:"g51", grupo:"C", rodada:3, nome:"Escócia 🏴󠁧󠁢󠁳󠁣󠁴󠁿 × Brasil 🇧🇷",                data:"24/06 · 19h" },
+  { id:"g52", grupo:"C", rodada:3, nome:"Marrocos 🇲🇦 × Haiti 🇭🇹",               data:"24/06 · 19h" },
+  { id:"g53", grupo:"A", rodada:3, nome:"Rep. Tcheca 🇨🇿 × México 🇲🇽",            data:"24/06 · 22h" },
+  { id:"g54", grupo:"A", rodada:3, nome:"África do Sul 🇿🇦 × Coreia do Sul 🇰🇷",   data:"24/06 · 22h" },
+  { id:"g55", grupo:"E", rodada:3, nome:"Curaçao 🇨🇼 × Costa do Marfim 🇨🇮",       data:"25/06 · 17h" },
+  { id:"g56", grupo:"E", rodada:3, nome:"Equador 🇪🇨 × Alemanha 🇩🇪",              data:"25/06 · 17h" },
+  { id:"g57", grupo:"F", rodada:3, nome:"Japão 🇯🇵 × Suécia 🇸🇪",                 data:"25/06 · 20h" },
+  { id:"g58", grupo:"F", rodada:3, nome:"Tunísia 🇹🇳 × Países Baixos 🇳🇱",         data:"25/06 · 20h" },
+  { id:"g59", grupo:"D", rodada:3, nome:"Turquia 🇹🇷 × EUA 🇺🇸",                  data:"25/06 · 23h" },
+  { id:"g60", grupo:"D", rodada:3, nome:"Paraguai 🇵🇾 × Austrália 🇦🇺",            data:"25/06 · 23h" },
+  { id:"g61", grupo:"I", rodada:3, nome:"Noruega 🇳🇴 × França 🇫🇷",               data:"26/06 · 16h" },
+  { id:"g62", grupo:"I", rodada:3, nome:"Senegal 🇸🇳 × Iraque 🇮🇶",               data:"26/06 · 16h" },
+  { id:"g63", grupo:"H", rodada:3, nome:"Cabo Verde 🇨🇻 × Arábia Saudita 🇸🇦",     data:"26/06 · 21h" },
+  { id:"g64", grupo:"H", rodada:3, nome:"Uruguai 🇺🇾 × Espanha 🇪🇸",              data:"26/06 · 21h" },
+  { id:"g65", grupo:"G", rodada:3, nome:"Egito 🇪🇬 × Irã 🇮🇷",                    data:"27/06 · 00h" },
+  { id:"g66", grupo:"G", rodada:3, nome:"Nova Zelândia 🇳🇿 × Bélgica 🇧🇪",         data:"27/06 · 00h" },
+  { id:"g67", grupo:"L", rodada:3, nome:"Panamá 🇵🇦 × Inglaterra 🏴󠁧󠁢󠁥󠁮󠁧󠁿",           data:"27/06 · 18h" },
+  { id:"g68", grupo:"L", rodada:3, nome:"Croácia 🇭🇷 × Gana 🇬🇭",                 data:"27/06 · 18h" },
+  { id:"g69", grupo:"K", rodada:3, nome:"Colômbia 🇨🇴 × Portugal 🇵🇹",            data:"27/06 · 20h30" },
+  { id:"g70", grupo:"K", rodada:3, nome:"Congo (RD) 🇨🇩 × Uzbequistão 🇺🇿",       data:"27/06 · 20h30" },
+  { id:"g71", grupo:"J", rodada:3, nome:"Argélia 🇩🇿 × Áustria 🇦🇹",              data:"27/06 · 23h" },
+  { id:"g72", grupo:"J", rodada:3, nome:"Jordânia 🇯🇴 × Argentina 🇦🇷",            data:"27/06 · 23h" },
+
+  // ===== MATA-MATA =====
+  { id:"r01", grupo:"R32", rodada:0, nome:"Rodada de 32 · Jogo 1", data:"28/06" },
+  { id:"r02", grupo:"R32", rodada:0, nome:"Rodada de 32 · Jogo 2", data:"29/06" },
+  { id:"r03", grupo:"R32", rodada:0, nome:"Rodada de 32 · Jogo 3", data:"29/06" },
+  { id:"r04", grupo:"R32", rodada:0, nome:"Rodada de 32 · Jogo 4", data:"30/06" },
+  { id:"r05", grupo:"R32", rodada:0, nome:"Rodada de 32 · Jogo 5", data:"01/07" },
+  { id:"r06", grupo:"R32", rodada:0, nome:"Rodada de 32 · Jogo 6", data:"02/07" },
+  { id:"r07", grupo:"R32", rodada:0, nome:"Rodada de 32 · Jogo 7", data:"03/07" },
+  { id:"r08", grupo:"R32", rodada:0, nome:"Rodada de 32 · Jogo 8", data:"03/07" },
+  { id:"o01", grupo:"Oitavas", rodada:0, nome:"Oitavas de Final · Jogo 1", data:"04/07" },
+  { id:"o02", grupo:"Oitavas", rodada:0, nome:"Oitavas de Final · Jogo 2", data:"05/07" },
+  { id:"o03", grupo:"Oitavas", rodada:0, nome:"Oitavas de Final · Jogo 3", data:"06/07" },
+  { id:"o04", grupo:"Oitavas", rodada:0, nome:"Oitavas de Final · Jogo 4", data:"07/07" },
+  { id:"q01", grupo:"Quartas", rodada:0, nome:"Quartas de Final · Jogo 1", data:"09/07" },
+  { id:"q02", grupo:"Quartas", rodada:0, nome:"Quartas de Final · Jogo 2", data:"10/07" },
+  { id:"q03", grupo:"Quartas", rodada:0, nome:"Quartas de Final · Jogo 3", data:"11/07" },
+  { id:"s01", grupo:"Semi", rodada:0, nome:"Semifinal 1", data:"14/07" },
+  { id:"s02", grupo:"Semi", rodada:0, nome:"Semifinal 2", data:"15/07" },
+  { id:"f01", grupo:"Final", rodada:0, nome:"🏆 GRANDE FINAL", data:"19/07 · MetLife" },
+];
+
+const HOJE = "17/06";
+const GRUPOS_FASE = ["A","B","C","D","E","F","G","H","I","J","K","L"];
+const MATA = ["R32","Oitavas","Quartas","Semi","Final"];
+
+function calcPts(palpite, resultado) {
+  if (!palpite || !resultado) return { pts: 0, itens: [] };
+  const pg1 = parseInt(palpite.g1)||0, pg2 = parseInt(palpite.g2)||0;
+  const rg1 = parseInt(resultado.g1)||0, rg2 = parseInt(resultado.g2)||0;
+  let pts = 0; const itens = [];
+  if (pg1===rg1 && pg2===rg2) { pts+=5; itens.push("🎯+5"); }
+  else {
+    const pv=pg1>pg2?1:pg1<pg2?2:0, rv=rg1>rg2?1:rg1<rg2?2:0;
+    if (pv===rv) { pts+=2; itens.push("✅+2"); }
+  }
+  if (pg1+pg2===rg1+rg2) { pts+=1; itens.push("🔢+1"); }
+  const gl=(resultado.goleador||"").trim().toLowerCase();
+  const pg=(palpite.goleador||"").trim().toLowerCase();
+  if (gl&&pg&&gl===pg) { pts+=1; itens.push("⚽+1"); }
+  return { pts, itens };
+}
+
+function statusBox(palpite, resultado) {
+  if (!resultado||!palpite) return "pending";
+  const pg1=parseInt(palpite.g1)||0,pg2=parseInt(palpite.g2)||0;
+  const rg1=parseInt(resultado.g1)||0,rg2=parseInt(resultado.g2)||0;
+  if (pg1===rg1&&pg2===rg2) return "exact";
+  const pv=pg1>pg2?1:pg1<pg2?2:0,rv=rg1>rg2?1:rg1<rg2?2:0;
+  return pv===rv?"winner":"wrong";
+}
+
+const ST = {
+  exact:  {border:"2px solid #FFD700",background:"#fffbe6"},
+  winner: {border:"2px solid #009C3B",background:"#f0fff4"},
+  wrong:  {border:"2px solid #ff4444",background:"#fff5f5"},
+  pending:{border:"2px solid #ddd",background:"#fafafa"},
+};
+
+export default function App() {
+  const [usuario, setUsuario] = useState(null);
+  const [dados, setDados] = useState({});
+  const [aba, setAba] = useState("hoje");
+  const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState({});
+  const [resultadoAberto, setResultadoAberto] = useState({});
+  const [form, setForm] = useState({});
+  const [resForm, setResForm] = useState({});
+  const [toast, setToast] = useState(null);
+  const [grupoFiltro, setGrupoFiltro] = useState(null);
+
+  const carregar = useCallback(async () => {
+    try {
+      const result = await window.storage.get("bolao2026v2", true);
+      if (result) setDados(JSON.parse(result.value));
+    } catch { setDados({}); }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { carregar(); }, [carregar]);
+  useEffect(() => { const iv=setInterval(carregar,10000); return ()=>clearInterval(iv); }, [carregar]);
+
+  const mostrarToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null),2500); };
+
+  const salvarDados = async (nd) => {
+    try { await window.storage.set("bolao2026v2", JSON.stringify(nd), true); setDados(nd); }
+    catch { mostrarToast("❌ Erro ao salvar"); }
+  };
+
+  const salvarPalpite = async (jogoId) => {
+    setSalvando(s=>({...s,[jogoId]:true}));
+    const f = form[jogoId]||{};
+    const nd = {...dados,[jogoId]:{...dados[jogoId],[usuario]:{g1:f.g1||"0",g2:f.g2||"0",goleador:f.goleador||""}}};
+    await salvarDados(nd);
+    setSalvando(s=>({...s,[jogoId]:false}));
+    mostrarToast("✅ Palpite salvo!");
+  };
+
+  const salvarResultado = async (jogoId) => {
+    const f = resForm[jogoId]||{};
+    const nd = {...dados,[jogoId]:{...dados[jogoId],resultado:{g1:f.g1||"0",g2:f.g2||"0",goleador:f.goleador||""}}};
+    await salvarDados(nd);
+    setResultadoAberto(r=>({...r,[jogoId]:false}));
+    mostrarToast("🏁 Resultado confirmado!");
+  };
+
+  const totais = () => {
+    let t={elton:0,erika:0};
+    JOGOS.forEach(j=>{
+      const d=dados[j.id]||{};
+      JOGADORES.forEach(p=>{ t[p]+=calcPts(d[p],d.resultado).pts; });
+    });
+    return t;
+  };
+
+  const pts = totais();
+  const outro = usuario==="elton"?"erika":"elton";
+
+  // Filtragem por aba
+  const jogosFiltrados = () => {
+    if (aba==="hoje") return JOGOS.filter(j=>j.data.startsWith(HOJE));
+    if (aba==="brasil") return JOGOS.filter(j=>j.grupo==="C");
+    if (aba==="grupos") {
+      const grp = grupoFiltro||"A";
+      return JOGOS.filter(j=>j.grupo===grp);
+    }
+    if (aba==="mata") return JOGOS.filter(j=>MATA.includes(j.grupo));
+    return [];
+  };
+
+  if (!usuario) {
+    return (
+      <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#002776 0%,#009C3B 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+        <div style={{fontSize:"4.5rem",marginBottom:8}}>⚽</div>
+        <h1 style={{fontFamily:"Georgia,serif",fontSize:"2.2rem",color:"#FFDF00",textAlign:"center",marginBottom:4,textShadow:"2px 2px 0 #001a55"}}>BOLÃO COPA 2026</h1>
+        <p style={{color:"#cfe8ff",marginBottom:8,textAlign:"center",fontSize:"0.9rem"}}>72 jogos · Fase de grupos completa</p>
+        <p style={{color:"#fff",marginBottom:20,fontWeight:700,fontSize:"1rem"}}>Quem é você?</p>
+        <div style={{display:"flex",gap:16}}>
+          {JOGADORES.map(j=>(
+            <button key={j} onClick={()=>setUsuario(j)} style={{
+              background:j==="elton"?"#002776":"#009C3B",color:"#fff",
+              border:"3px solid #FFDF00",borderRadius:16,padding:"18px 28px",
+              fontSize:"1.2rem",fontWeight:700,cursor:"pointer",
+              boxShadow:"0 4px 20px rgba(0,0,0,0.35)"
+            }}>{NOMES[j]}</button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const jgs = jogosFiltrados();
+
+  return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#002776 0%,#009C3B 100%)",padding:"14px 12px",fontFamily:"system-ui,sans-serif"}}>
+
+      {toast&&(
+        <div style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",background:"#FFDF00",color:"#002776",padding:"10px 20px",borderRadius:30,fontWeight:700,zIndex:999,boxShadow:"0 4px 12px rgba(0,0,0,0.3)",fontSize:"0.88rem",whiteSpace:"nowrap"}}>
+          {toast}
+        </div>
+      )}
+
+      {/* HEADER */}
+      <div style={{textAlign:"center",marginBottom:10}}>
+        <div style={{fontSize:"1.6rem",fontWeight:900,color:"#FFDF00",letterSpacing:1,textShadow:"2px 2px 0 #001a55"}}>⚽ BOLÃO 2026</div>
+        <div style={{color:"#cfe8ff",fontSize:"0.72rem"}}>
+          Logado como <b style={{color:"#FFDF00"}}>{NOMES[usuario]}</b>
+          <span onClick={()=>setUsuario(null)} style={{marginLeft:8,color:"#aac",cursor:"pointer",textDecoration:"underline",fontSize:"0.68rem"}}>trocar</span>
+        </div>
+      </div>
+
+      {/* PLACAR */}
+      <div style={{background:"#001a55",border:"3px solid #FFDF00",borderRadius:16,padding:"12px 8px",marginBottom:12,display:"flex",justifyContent:"space-around",alignItems:"center"}}>
+        {JOGADORES.map(j=>(
+          <div key={j} style={{textAlign:"center",flex:1}}>
+            <div style={{color:"#FFDF00",fontWeight:900,fontSize:"0.95rem"}}>{NOMES[j]}</div>
+            <div style={{color:"#fff",fontSize:"2.8rem",fontWeight:900,lineHeight:1}}>{pts[j]}</div>
+            <div style={{color:"#9ab",fontSize:"0.62rem",textTransform:"uppercase",letterSpacing:1}}>pts</div>
+            {pts[j]>pts[j==="elton"?"erika":"elton"]&&<div style={{color:"#FFDF00",fontSize:"0.68rem",fontWeight:700}}>👑 Líder!</div>}
+            {pts[j]===pts[j==="elton"?"erika":"elton"]&&pts[j]>0&&<div style={{color:"#aac",fontSize:"0.65rem"}}>🤝 Empate</div>}
+          </div>
+        ))}
+        <div style={{color:"#009C3B",fontWeight:900,fontSize:"1.4rem",padding:"0 6px"}}>VS</div>
+      </div>
+
+      {/* LEGENDA */}
+      <div style={{background:"rgba(255,255,255,0.1)",borderRadius:10,padding:"8px 10px",marginBottom:12,display:"flex",flexWrap:"wrap",gap:5,justifyContent:"center"}}>
+        {[["🎯","+5","placar exato"],["✅","+2","vencedor"],["🔢","+1","total gols"],["⚽","+1","goleador"]].map(([ico,p,l])=>(
+          <span key={l} style={{background:"rgba(255,255,255,0.15)",borderRadius:20,padding:"3px 8px",color:"#e0f0ff",fontSize:"0.68rem",whiteSpace:"nowrap"}}>
+            {ico} <b style={{color:"#FFDF00"}}>{p}</b> {l}
+          </span>
+        ))}
+      </div>
+
+      {/* ABAS */}
+      <div style={{display:"flex",gap:6,marginBottom:10,overflowX:"auto",paddingBottom:4}}>
+        {[["hoje","📅 Hoje"],["brasil","🇧🇷 Brasil"],["grupos","🌍 Grupos"],["mata","⚔️ Mata"]].map(([id,label])=>(
+          <button key={id} onClick={()=>setAba(id)} style={{
+            flexShrink:0,padding:"8px 12px",border:"none",borderRadius:10,
+            fontWeight:700,fontSize:"0.75rem",cursor:"pointer",
+            background:aba===id?"#FFDF00":"rgba(255,255,255,0.15)",
+            color:aba===id?"#002776":"#fff",whiteSpace:"nowrap"
+          }}>{label}</button>
+        ))}
+      </div>
+
+      {/* SUB FILTRO GRUPOS */}
+      {aba==="grupos"&&(
+        <div style={{display:"flex",gap:5,marginBottom:10,overflowX:"auto",paddingBottom:4}}>
+          {GRUPOS_FASE.map(g=>(
+            <button key={g} onClick={()=>setGrupoFiltro(g)} style={{
+              flexShrink:0,width:36,height:36,border:"none",borderRadius:8,
+              fontWeight:700,fontSize:"0.78rem",cursor:"pointer",
+              background:(grupoFiltro||"A")===g?"#FFDF00":"rgba(255,255,255,0.2)",
+              color:(grupoFiltro||"A")===g?"#002776":"#fff"
+            }}>{g}</button>
+          ))}
+        </div>
+      )}
+
+      {/* INFO ABA */}
+      {aba==="hoje"&&(
+        <div style={{color:"#cfe8ff",fontSize:"0.72rem",marginBottom:8,textAlign:"center"}}>
+          Quarta, 17 de junho · {jgs.length} jogos
+        </div>
+      )}
+
+      {/* LISTA DE JOGOS */}
+      {loading?(
+        <div style={{textAlign:"center",color:"#cfe8ff",padding:40}}>Carregando...</div>
+      ):jgs.length===0?(
+        <div style={{textAlign:"center",color:"#cfe8ff",padding:40,fontSize:"0.85rem"}}>Nenhum jogo nesta aba</div>
+      ):jgs.map(jogo=>{
+        const d=dados[jogo.id]||{};
+        const resultado=d.resultado;
+        const meuPalpite=d[usuario];
+        const palpiteOutro=d[outro];
+        const minhaCalc=calcPts(meuPalpite,resultado);
+        const outroCalc=calcPts(palpiteOutro,resultado);
+        const meuStatus=statusBox(meuPalpite,resultado);
+        const outroStatus=statusBox(palpiteOutro,resultado);
+        const jForm=form[jogo.id]||{};
+        const rForm=resForm[jogo.id]||{};
+        const eHoje=jogo.data.startsWith(HOJE);
+
+        return (
+          <div key={jogo.id} style={{background:"#fff",borderRadius:14,padding:13,marginBottom:10,boxShadow:"0 2px 10px rgba(0,0,0,0.12)",borderLeft:resultado?"4px solid #009C3B":eHoje?"4px solid #FFDF00":"4px solid transparent"}}>
+
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:9}}>
+              <div>
+                <div style={{fontWeight:700,fontSize:"0.87rem",color:"#002776",lineHeight:1.3}}>{jogo.nome}</div>
+                <div style={{fontSize:"0.68rem",color:"#888",marginTop:2}}>Grupo {jogo.grupo} · {jogo.data}{eHoje&&!resultado?<span style={{marginLeft:6,background:"#FFDF00",color:"#002776",borderRadius:10,padding:"1px 6px",fontSize:"0.6rem",fontWeight:700}}>HOJE</span>:null}</div>
+              </div>
+              {resultado&&(
+                <span style={{background:"#009C3B",color:"#fff",borderRadius:20,padding:"2px 9px",fontSize:"0.72rem",fontWeight:700,marginLeft:6,whiteSpace:"nowrap"}}>
+                  ✔ {resultado.g1}–{resultado.g2}
+                </span>
+              )}
+            </div>
+
+            {resultado?(
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+                {[{player:usuario,palpite:meuPalpite,calc:minhaCalc,status:meuStatus},{player:outro,palpite:palpiteOutro,calc:outroCalc,status:outroStatus}].map(({player,palpite,calc,status})=>(
+                  <div key={player} style={{borderRadius:9,padding:9,textAlign:"center",...ST[status]}}>
+                    <div style={{fontSize:"0.65rem",fontWeight:700,color:"#555",textTransform:"uppercase",marginBottom:3}}>{NOMES[player]}</div>
+                    <div style={{fontWeight:900,fontSize:"1.5rem",color:"#002776",letterSpacing:2}}>{palpite?`${palpite.g1}–${palpite.g2}`:"?–?"}</div>
+                    <div style={{fontSize:"0.68rem",fontWeight:700,color:"#555",marginTop:2}}>{calc.pts>0?`+${calc.pts}pts ✨`:"0pts 😔"}</div>
+                    {palpite?.goleador&&<div style={{fontSize:"0.6rem",color:"#777",marginTop:1}}>⚽ {palpite.goleador}</div>}
+                    {calc.itens.length>0&&<div style={{fontSize:"0.58rem",color:"#009C3B",marginTop:2}}>{calc.itens.join(" · ")}</div>}
+                  </div>
+                ))}
+              </div>
+            ):(
+              <div>
+                <div style={{background:`${CORES[usuario]}11`,borderRadius:9,padding:10,marginBottom:7,border:`2px solid ${CORES[usuario]}33`}}>
+                  <div style={{fontSize:"0.68rem",fontWeight:700,color:CORES[usuario],marginBottom:7}}>SEU PALPITE</div>
+                  <div style={{display:"flex",gap:5,alignItems:"center",marginBottom:7,flexWrap:"wrap"}}>
+                    <input type="number" min="0" max="20" placeholder="0" value={jForm.g1??meuPalpite?.g1??""} onChange={e=>setForm(f=>({...f,[jogo.id]:{...f[jogo.id],g1:e.target.value}}))}
+                      style={{width:44,height:40,borderRadius:7,border:`2px solid ${CORES[usuario]}`,textAlign:"center",fontSize:"1.1rem",fontWeight:700,color:"#002776",outline:"none"}} />
+                    <span style={{fontWeight:700,color:"#aaa"}}>×</span>
+                    <input type="number" min="0" max="20" placeholder="0" value={jForm.g2??meuPalpite?.g2??""} onChange={e=>setForm(f=>({...f,[jogo.id]:{...f[jogo.id],g2:e.target.value}}))}
+                      style={{width:44,height:40,borderRadius:7,border:`2px solid ${CORES[usuario]}`,textAlign:"center",fontSize:"1.1rem",fontWeight:700,color:"#002776",outline:"none"}} />
+                    <input type="text" placeholder="⚽ Goleador" value={jForm.goleador??meuPalpite?.goleador??""} onChange={e=>setForm(f=>({...f,[jogo.id]:{...f[jogo.id],goleador:e.target.value}}))}
+                      style={{flex:1,minWidth:80,height:40,borderRadius:7,border:"2px solid #ddd",padding:"0 8px",fontSize:"0.8rem",outline:"none"}} />
+                  </div>
+                  <button onClick={()=>salvarPalpite(jogo.id)} disabled={salvando[jogo.id]} style={{width:"100%",padding:"8px",background:CORES[usuario],color:"#fff",border:"none",borderRadius:7,fontWeight:700,fontSize:"0.82rem",cursor:"pointer",opacity:salvando[jogo.id]?0.7:1}}>
+                    {salvando[jogo.id]?"Salvando...":meuPalpite?"✏️ Atualizar":"💾 Salvar palpite"}
+                  </button>
+                </div>
+
+                <div style={{background:"#f8f8f8",borderRadius:9,padding:"8px 10px",border:"2px solid #eee",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                  <div style={{fontSize:"0.68rem",fontWeight:700,color:"#888"}}>{NOMES[outro]}</div>
+                  {palpiteOutro?(
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{fontWeight:900,fontSize:"1.05rem",color:"#002776",letterSpacing:2}}>{palpiteOutro.g1}–{palpiteOutro.g2}</span>
+                      {palpiteOutro.goleador&&<span style={{fontSize:"0.68rem",color:"#777"}}>⚽ {palpiteOutro.goleador}</span>}
+                    </div>
+                  ):(
+                    <span style={{fontSize:"0.72rem",color:"#bbb"}}>⏳ aguardando...</span>
+                  )}
+                </div>
+
+                <button onClick={()=>setResultadoAberto(r=>({...r,[jogo.id]:!r[jogo.id]}))}
+                  style={{width:"100%",padding:7,background:"#002776",color:"#fff",border:"none",borderRadius:7,fontSize:"0.75rem",fontWeight:600,cursor:"pointer"}}>
+                  🏁 Entrar resultado real
+                </button>
+
+                {resultadoAberto[jogo.id]&&(
+                  <div style={{background:"#f0f4ff",borderRadius:9,padding:10,marginTop:7}}>
+                    <div style={{fontSize:"0.68rem",fontWeight:700,color:"#555",marginBottom:7}}>RESULTADO REAL</div>
+                    <div style={{display:"flex",gap:5,alignItems:"center",marginBottom:7,flexWrap:"wrap"}}>
+                      <input type="number" min="0" max="20" placeholder="0" value={rForm.g1??""} onChange={e=>setResForm(f=>({...f,[jogo.id]:{...f[jogo.id],g1:e.target.value}}))}
+                        style={{width:44,height:40,borderRadius:7,border:"2px solid #002776",textAlign:"center",fontSize:"1.1rem",fontWeight:700,outline:"none"}} />
+                      <span style={{fontWeight:700,color:"#aaa"}}>×</span>
+                      <input type="number" min="0" max="20" placeholder="0" value={rForm.g2??""} onChange={e=>setResForm(f=>({...f,[jogo.id]:{...f[jogo.id],g2:e.target.value}}))}
+                        style={{width:44,height:40,borderRadius:7,border:"2px solid #002776",textAlign:"center",fontSize:"1.1rem",fontWeight:700,outline:"none"}} />
+                      <input type="text" placeholder="⚽ Goleador real" value={rForm.goleador??""} onChange={e=>setResForm(f=>({...f,[jogo.id]:{...f[jogo.id],goleador:e.target.value}}))}
+                        style={{flex:1,minWidth:80,height:40,borderRadius:7,border:"2px solid #ddd",padding:"0 8px",fontSize:"0.8rem",outline:"none"}} />
+                    </div>
+                    <button onClick={()=>salvarResultado(jogo.id)} style={{width:"100%",padding:8,background:"#FFDF00",color:"#002776",border:"none",borderRadius:7,fontWeight:700,fontSize:"0.82rem",cursor:"pointer"}}>
+                      ✅ Confirmar resultado
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <div style={{textAlign:"center",color:"rgba(255,255,255,0.35)",fontSize:"0.62rem",marginTop:12,paddingBottom:20}}>
+        Sincroniza a cada 10s · {JOGOS.length} jogos cadastrados ⚡
+      </div>
+    </div>
+  );
+}
+
